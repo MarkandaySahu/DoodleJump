@@ -8,10 +8,17 @@ local Sfx = require"components/sfx"
 
 function love.load()
     sfx = Sfx()
-    sfx:playBGM()
+    --sfx:playBGM()
     math.randomseed(os.time())
     menu = Menu()
+
     game = Game()
+    game:insertTiles()
+    game.doodle_p.x = game.tiles[6].x[1] + 50
+    _G.gravity = 300
+    _G.jump_timer =0
+    _G.jump = false
+
     ended = End()
     info = Info()
     settings = Settings()
@@ -77,24 +84,24 @@ function love.keypressed(key)
             end
         elseif settings.doodleSelect==true then
             if key=="right" then
-                for key, value in ipairs(settings.doodle) do
-                    if settings.doodle[key].select == true then
-                        if key==8 then
+                for k, value in ipairs(settings.doodle) do
+                    if settings.doodle[k].select == true then
+                        if k==8 then
                             break
                         end
-                        settings.doodle[key].select=false
-                        settings.doodle[key+1].select=true
+                        settings.doodle[k].select=false
+                        settings.doodle[k+1].select=true
                         break
                     end
                 end
             elseif key=="left" then
-                for key, value in ipairs(settings.doodle) do
-                    if settings.doodle[key].select == true then
-                        if key==1 then
+                for k, value in ipairs(settings.doodle) do
+                    if settings.doodle[k].select == true then
+                        if k==1 then
                             break
                         end
-                        settings.doodle[key].select=false
-                        settings.doodle[key-1].select=true
+                        settings.doodle[k].select=false
+                        settings.doodle[k-1].select=true
                         break
                     end
                 end
@@ -104,15 +111,83 @@ function love.keypressed(key)
         if key=="escape" then
             ChangeGameState("menu")
         end
+    elseif state=="game" then
+        if key=="escape" then
+            if game.paused then
+                game.paused = false
+                game.opacity = 1
+            else
+                game.paused = true
+                game.opacity = 0.4
+            end
+        end
+        if game.paused==false then
+            if game:checkCollision() then
+                if key=="space" then
+                    jump_timer = game.doodle_p.y/(game.doodle_p.y - game.jump_dist)--for position tweening
+                end
+            end
+        end
+    elseif state=="ended" then
+        if key=="escape" then
+            ChangeGameState("menu")
+        end
     end
-    
 end
 -----------------------------------------------------------------------------------
 function love.update(dt)
-    
 
+    for _, value in ipairs(settings.doodle) do
+        if value.select == true then
+            game.doodle_p.image = value.image
+        end
+    end
+    
     if state=="game" then
+        if game.paused==false then
+            
+            if game:checkCollision() then--translate 
+                if game.doodle_p.y < 690 and game.doodle_p.y > 540 then
+                    if jump then
+                        --change all x position of all tiles to current one
+                        jump = false
+                    end
+                    --push down all tiles by 150
+                    --remove last tile from below 
+                    --insert new tile to top
+                elseif game.doodle_p.y < 90 then--it means we came here through jump power-up.
+                    --push down all tiles by 900
+                    --remove last 6 tiles from below 
+                    --insert new 6 tiles to top
+                end
+            else
+                game.doodle_p.y = game.doodle_p.y + dt * gravity
+            end
+            if jump_timer > 1 then--position tweening
+                game.doodle_p.y = final_position * jump_timer
+                jump_timer = jump_timer - dt*2
+            else
+                jump_timer = 0
+            end
+
+            if love.keyboard.isDown("a") then
+                game.doodle_p.x = game.doodle_p.x - dt * 200
+            elseif love.keyboard.isDown("d") then
+                game.doodle_p.x = game.doodle_p.x + dt * 200
+            end
+            if game.doodle_p.x > love.graphics.getWidth() then
+                game.doodle_p.x = 0
+            elseif game.doodle_p.x + 60 < 0 then
+                game.doodle_p.x = love.graphics.getWidth()
+            end
+            if game.doodle_p.y > love.graphics.getHeight() then
+                ChangeGameState("ended")
+                game.doodle_p.y = 570
+            end
+        end
         love.mouse.setVisible(false)
+    elseif state=="ended" then
+        love.mouse.setVisible(true)
     elseif state=="settings" then
         settings.volumeSlider:update()
         sfx:setBGvol(settings.volumeSlider:getValue())
@@ -122,10 +197,10 @@ end
 function love.draw()
     if state == "menu" then
         menu:draw()
-    elseif state == "game" then
-        game:draw()
     elseif state == "settings" then
         settings:draw()
+    elseif state == "game" then
+        game:draw()
     elseif state == "ended" then
         ended:draw()
     elseif state == "info" then
