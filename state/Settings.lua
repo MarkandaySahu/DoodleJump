@@ -45,7 +45,7 @@ function Settings()
             else
                 love.graphics.rectangle("line",440,300,110,50)
                 love.graphics.setFont(love.graphics.newFont(20))
-                love.graphics.print("less Power-Ups",420,350,0)
+                love.graphics.print("less Stars",450,350,0)
             end
 
             love.graphics.setFont(love.graphics.newFont(36))

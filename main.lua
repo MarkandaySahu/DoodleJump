@@ -7,9 +7,9 @@ local Info = require"state/Info"
 local Sfx = require"components/sfx"
 
 function love.load()
-    _G.debug = true
+    _G.debug = false
     sfx = Sfx()
-    --sfx:playBGM()
+    sfx:playBGM()
     math.randomseed(os.time())
     menu = Menu()
     game = Game()
@@ -50,12 +50,12 @@ function love.keypressed(key)
             if menuBox==1 then
                 ChangeGameState("game")
                 game = Game()
+                game.score=0
                 game:insertTiles()
                 game.doodle_p.x = game.tiles[6].x[1] + 50
                 _G.gravity = 300
                 _G.jump_timer =0--for tweening
                 _G.translate_tween = false
-                _G.jump = false
             elseif menuBox==2 then
                 ChangeGameState("settings")
             elseif menuBox==3 then
@@ -125,16 +125,25 @@ function love.keypressed(key)
         if game.paused==false then
             if game:checkCollision() then
                 if key=="space" then
-                    jump_timer = game.doodle_p.y/(game.doodle_p.y - game.jump_dist)--for position tweening
-                    _G.translate_tween_dist = true
+                    sfx.fx_played = false
                     --insert new tile
                     if game.tiles[1].y > 0 then
-                       table.insert(game.tiles,1,{y=-60,x={},initial_position=nil,tween_timer=0})
+                        local s = math.random(15)
+                        local score
+                        local p
+                        if s==1 or s==5 or s==15 then
+                            score = "star"
+                        elseif s == 10 then
+                            score = "trophy"
+                        end
+                        table.insert(game.tiles,1,{y=-60,x={},initial_position=nil,tween_timer=0,score=score})
                         for i = 1,2 do
                             local x = math.random(0,3)
                             table.insert(game.tiles[1].x,(x*150)+5)
-                        end 
+                        end
                     end
+                    jump_timer = game.doodle_p.y/(game.doodle_p.y - game.jump_dist)--for position tweening
+                    _G.translate_tween_dist = true
                 end
             end
         end
@@ -158,33 +167,24 @@ function love.update(dt)
             
             if game:checkCollision() then--translate 
                 if game.doodle_p.y < 690 and game.doodle_p.y > 540 then
-                    if jump then
-                        --change all x position of all tiles to current one
-                        jump = false
-                    end
                     --push down all tiles by 150
                     game.translate_dist = 150
-                    --remove last tile from below
-                    --insert new tile to top
-                    for _, value in pairs(game.tiles) do
-                        if value.y > love.graphics.getHeight() then
-                            table.remove(game.tiles,_)
-                        end
-                    end
-                    translate_tween = true
-                elseif game.doodle_p.y < 90 then--it means we came here through jump power-up.
-                    --push down all tiles by 900
                     
-                    --remove last 6 tiles from below 
-                    --insert new 6 tiles to top
+                    translate_tween = true
                 end
             else
                 game.doodle_p.y = game.doodle_p.y + dt * gravity
             end
+            --remove last tile from below
+            for _, value in pairs(game.tiles) do
+                if value.y > love.graphics.getHeight() then
+                    table.remove(game.tiles,_)
+                end
+            end
             if translate_tween then
                 for _, value in pairs(game.tiles) do
-                    if value.tween_timer <= 1 then
-                        value.tween_timer = value.tween_timer + dt
+                    if value.tween_timer < 1 then
+                        value.tween_timer = value.tween_timer + dt * 2
                         value.y = value.initial_position + game.translate_dist*(value.tween_timer/1)
                     else
                         value.tween_timer = 0
@@ -200,9 +200,9 @@ function love.update(dt)
             end
 
             if love.keyboard.isDown("a") then
-                game.doodle_p.x = game.doodle_p.x - dt * 200
+                game.doodle_p.x = game.doodle_p.x - dt * 300
             elseif love.keyboard.isDown("d") then
-                game.doodle_p.x = game.doodle_p.x + dt * 200
+                game.doodle_p.x = game.doodle_p.x + dt * 300
             end
             if game.doodle_p.x > love.graphics.getWidth() then
                 game.doodle_p.x = 0
@@ -219,7 +219,7 @@ function love.update(dt)
         love.mouse.setVisible(true)
     elseif state=="settings" then
         settings.volumeSlider:update()
-        sfx:setBGvol(settings.volumeSlider:getValue())
+        sfx:setvol(settings.volumeSlider:getValue())
     end
 end
 -----------------------------------------------------------------------------------
