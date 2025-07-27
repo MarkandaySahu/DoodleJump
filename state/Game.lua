@@ -11,11 +11,16 @@ function Game()
         paused = true,
         score = 0,
         jump_dist = 200,
+        translate_dist = 150,
         doodle_p = {image = nil, x = nil, y = 700},
-        tiles = {{y=90,x={}},{y=240,x={}},{y=390,x={}},{y=540,x={}},{y=690,x={}},{y=840,x={}},{y=990,x={}}},
-        update = function (self)
-            
-        end,
+        tiles = {
+            {y=90,x={},initial_position=nil,tween_timer=0},
+            {y=240,x={},initial_position=nil,tween_timer=0},
+            {y=390,x={},initial_position=nil,tween_timer=0},
+            {y=540,x={},initial_position=nil,tween_timer=0},
+            {y=690,x={},initial_position=nil,tween_timer=0},
+            {y=840,x={},initial_position=nil,tween_timer=0},
+            {y=990,x={},initial_position=nil,tween_timer=0}},
         insertTiles =function (self)
             for _, value in pairs(self.tiles) do
                 for i = 1,2 do
@@ -26,6 +31,9 @@ function Game()
         end,
         checkCollision = function (self)
             for _, value in pairs(self.tiles) do
+                if translate_tween_dist then
+                    value.initial_position = value.y
+                end
                 for i = 1,2 do
                     if (self.doodle_p.y + 60) > value.y and (self.doodle_p.y + 60 ) < (value.y + 20) and (self.doodle_p.x < value.x[i] + 150) and (self.doodle_p.x + 50) > (value.x[i]) then
                         if jump_timer == 0 then
@@ -38,6 +46,7 @@ function Game()
                     end
                 end
             end
+            translate_tween_dist = false
         end,
         draw = function (self)
             if self.paused then
